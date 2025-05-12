@@ -1,19 +1,41 @@
-import { UserCheck, UserPlus, UsersIcon, UserX , Truck } from "lucide-react";
+import { UserCheck, UserPlus, UsersIcon, UserX, Truck } from "lucide-react";
 import { motion } from "framer-motion";
-{/* <Truck /> */}
+import { useState, useEffect } from "react";
+import { adminApi } from "../services/api";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import UsersTable from "../components/users/UsersTable";
 import UserDemographicsChart from "../components/users/UserDemographicsChart";
 
-const userStats = {
-	totalUsers: 152845,
-	newUsersToday: 243,
-	activeUsers: 98520,
-	churnRate: "2.4%",
-};
-
 const UsersPage = () => {
+	const [stats, setStats] = useState({
+		totalUsers: 0,
+		customerService: 0,
+		customers: 0,
+		delivery: 0,
+	});
+
+	useEffect(() => {
+		fetchUsersStats();
+	}, []);
+
+	const fetchUsersStats = async () => {
+		try {
+			const response = await adminApi.getAllUsers();
+			// console.log(response);
+			const users = response.data;
+			console.log(users);
+			setStats({
+				totalUsers: users.length,
+				customerService: users.filter((u) => u.role === "customer service").length,
+				customers: users.filter((u) => u.role === "customer").length,
+				delivery: users.filter((u) => u.role === "delivery").length,
+			});
+		} catch (error) {
+			console.error("Error fetching users stats:", error);
+		}
+	};
+
 	return (
 		<div className='flex-1 overflow-auto relative z-10 dark:bg-gray-900 bg-light-primary'>
 			<Header title='Users' />
@@ -29,17 +51,27 @@ const UsersPage = () => {
 					<StatCard
 						name='Total Users'
 						icon={UsersIcon}
-						value={userStats.totalUsers.toLocaleString()}
+						value={stats.totalUsers.toString()}
 						color='#6366F1'
 					/>
-					<StatCard name='Customer service' icon={UserPlus} value={userStats.newUsersToday} color='#10B981' />
+					<StatCard
+						name='Customer service'
+						icon={UserPlus}
+						value={stats.customerService.toString()}
+						color='#10B981'
+					/>
 					<StatCard
 						name='Customers'
 						icon={UserCheck}
-						value={userStats.activeUsers.toLocaleString()}
+						value={stats.customers.toString()}
 						color='#F59E0B'
 					/>
-					<StatCard name='delivery' icon={Truck} value={userStats.churnRate} color='#EF4444' />
+					<StatCard
+						name='Delivery'
+						icon={Truck}
+						value={stats.delivery.toString()}
+						color='#EF4444'
+					/>
 				</motion.div>
 
 				<UsersTable />

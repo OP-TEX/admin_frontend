@@ -1,7 +1,7 @@
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux"; // Added useDispatch
 import { Toaster } from 'react-hot-toast';
-
+import { useEffect } from 'react';
 import Sidebar from "./components/common/Sidebar";
 import LoginPage from "./pages/LoginPage";
 import OverviewPage from "./pages/OverviewPage";
@@ -11,6 +11,8 @@ import SalesPage from "./pages/SalesPage";
 import OrdersPage from "./pages/OrdersPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
+import { refreshAuthTokens } from "./endpoints/endpoints";
+import { logout, loginSuccess } from "./redux/slices/authSlice"; // Added logout import
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -37,6 +39,76 @@ const PublicRoute = ({ children }) => {
 };
 
 function App() {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  
+  // Function to handle token refresh
+  const handleTokenRefresh = async () => {
+    try {
+      const userId = localStorage.getItem("userId");
+      const refreshToken = localStorage.getItem("refreshToken");
+      
+      if (!userId || !refreshToken) {
+        console.log("Missing userId or refreshToken - can't refresh");
+        return false;
+      }
+      
+      const tokens = await refreshAuthTokens(userId, refreshToken);
+      
+      // Update tokens in localStorage
+      localStorage.setItem("token", tokens.accessToken);
+      localStorage.setItem("refreshToken", tokens.refreshToken);
+      
+      // Update Redux state with new tokens
+      if (user) {
+        dispatch(loginSuccess({
+          user,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken
+        }));
+      }
+      
+      console.log("Token refresh successful");
+      return true;
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      return false;
+    }
+  };
+  
+  // Function to handle logout
+  const handleLogout = () => {
+    dispatch(logout());
+    window.location.href = '/login';
+  };
+  
+  useEffect(() => {
+    // Try to refresh token on mount
+    const refreshOnMount = async () => {
+      const success = await handleTokenRefresh();
+      
+      // If refresh fails, log the user out
+      if (!success && localStorage.getItem("token")) {
+        handleLogout();
+      }
+    };
+    
+    refreshOnMount();
+    
+    // Set up interval for token refresh every 20 minutes
+    const refreshInterval = setInterval(() => {
+      handleTokenRefresh().catch(err => {
+        console.error("Scheduled token refresh failed:", err);
+        handleLogout();
+      });
+    }, 20 * 60 * 1000); // 20 minutes
+    
+    // Clean up interval on component unmount
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, []);
+  
   return (
     <>
       <Toaster position="top-right" />
@@ -64,6 +136,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<ProductsPage />} />
                   <Route path="/users" element={<UsersPage />} />
+                  <Route path="/orders" element={<OrdersPage/>} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

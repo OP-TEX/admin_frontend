@@ -9,15 +9,14 @@ import { deleteProduct, updateProduct } from '../../services/adminService';
 import toast from 'react-hot-toast';
 import { useDebounce } from "../../hooks/useDebounce";
 
-const ProductsTable = () => {
+const ProductsTable = ({ initialProducts = [], onProductsChange, fetchProducts }) => {
   // Data + filtering state
-  const [productData, setProductData] = useState([]);
+  const [productData, setProductData] = useState(initialProducts);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [filteredProducts, setFilteredProducts] = useState(initialProducts);
+  const [loading, setLoading] = useState(!initialProducts.length);
   const [error, setError] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const debouncedSearchTerm = useDebounce(searchTerm);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Modal state
   const [isNewProductModalOpen, setIsNewProductModalOpen] = useState(false);
@@ -25,38 +24,47 @@ const ProductsTable = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // Fetch products on component mount and when debounced search term changes
+  // Use initial products if provided
   useEffect(() => {
-    fetchProducts();
-  }, [debouncedSearchTerm]);
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await getProducts({ 
-        name: debouncedSearchTerm,
-        // Add other filters as needed
-      });
-      setProductData(result.products);
-      setFilteredProducts(result.products);
-    } catch (err) {
-      setError(err.message);
-      toast.error(err.message);
-    } finally {
+    if (initialProducts.length > 0) {
+      setProductData(initialProducts);
+      setFilteredProducts(initialProducts);
       setLoading(false);
     }
+  }, [initialProducts]);
+
+  // Filter products when search term changes (client-side)
+  useEffect(() => {
+    if (debouncedSearchTerm) {
+      filterProducts(debouncedSearchTerm);
+    } else {
+      setFilteredProducts(productData);
+    }
+  }, [debouncedSearchTerm, productData]);
+
+  // Client-side filtering function
+  const filterProducts = (searchTerm) => {
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const filtered = productData.filter((product) => {
+      return (
+        product.name.toLowerCase().includes(lowerSearchTerm) ||
+        product.category.toLowerCase().includes(lowerSearchTerm) ||
+        product._id.toLowerCase().includes(lowerSearchTerm)
+      );
+    });
+    setFilteredProducts(filtered);
   };
 
   // Handlers
-  const handleSearch = (e) => {
+  const handleSearchInput = (e) => {
     setSearchTerm(e.target.value);
-    setIsSearching(true);
   };
 
   const handleAddProduct = async (newProduct) => {
     try {
-      await fetchProducts(); // Refresh the products list
+      if (fetchProducts) {
+        await fetchProducts();
+      }
       toast.success('Product added successfully');
       setIsNewProductModalOpen(false);
     } catch (error) {
@@ -68,30 +76,39 @@ const ProductsTable = () => {
     setSelectedProduct(product);
     setIsEditModalOpen(true);
   };
+  
   const handleDeleteClick = (product) => {
     setSelectedProduct(product);
     setIsDeleteModalOpen(true);
   };
 
-  const handleCloseEditModal = () => { setIsEditModalOpen(false); setSelectedProduct(null); };
-  const handleCloseDeleteModal = () => { setIsDeleteModalOpen(false); setSelectedProduct(null); };
+  const handleCloseEditModal = () => { 
+    setIsEditModalOpen(false); 
+    setSelectedProduct(null); 
+  };
+  
+  const handleCloseDeleteModal = () => { 
+    setIsDeleteModalOpen(false); 
+    setSelectedProduct(null); 
+  };
 
   const handleSaveProduct = async (updatedProduct) => {
     try {
       setLoading(true);
-      // Convert formData to match API expectations
       const productData = {
         ...updatedProduct,
         price: parseFloat(updatedProduct.price),
         stock: parseInt(updatedProduct.stock),
         existingImages: updatedProduct.existingImages || [],
-        // Only include newImages if there are any
         ...(updatedProduct.newImages?.length > 0 && { newImages: updatedProduct.newImages })
       };
       
       await updateProduct(updatedProduct._id, productData);
       toast.success('Product updated successfully');
-      await fetchProducts(); // Refresh the products list
+      
+      if (fetchProducts) {
+        await fetchProducts();
+      }
     } catch (error) {
       toast.error(error.message || 'Failed to update product');
     } finally {
@@ -105,7 +122,10 @@ const ProductsTable = () => {
       setLoading(true);
       await deleteProduct(productId);
       toast.success('Product deleted successfully');
-      await fetchProducts(); // Refresh the products list
+      
+      if (fetchProducts) {
+        await fetchProducts();
+      }
     } catch (error) {
       toast.error(error.message || 'Failed to delete product');
     } finally {
@@ -141,7 +161,11 @@ const ProductsTable = () => {
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-            Product List
+            Product List {filteredProducts.length > 0 && 
+              <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                (Showing {filteredProducts.length} of {productData.length})
+              </span>
+            }
           </h2>
           <div className="relative w-64">
             <input
@@ -151,15 +175,11 @@ const ProductsTable = () => {
                 placeholder-gray-500 dark:placeholder-gray-400 rounded-lg pl-10 pr-4 py-2 
                 focus:outline-none focus:ring-2 focus:ring-blue-500 border 
                 border-gray-300 dark:border-gray-600"
-              onChange={handleSearch}
+              onChange={handleSearchInput}
               value={searchTerm}
             />
             <div className="absolute left-3 top-2.5">
-              {isSearching && debouncedSearchTerm !== searchTerm ? (
-                <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
-              ) : (
-                <Search className="h-5 w-5 text-gray-400" />
-              )}
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
           </div>
         </div>
@@ -174,7 +194,7 @@ const ProductsTable = () => {
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="flex justify-center items-center h-64 text-gray-500 dark:text-gray-400">
-            No products found
+            No products found matching "{searchTerm}"
           </div>
         ) : (
           <div className={`overflow-x-auto ${
@@ -204,6 +224,7 @@ const ProductsTable = () => {
                     transition={{ duration: 0.3 }}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
+                    {/* The rest of your table rows remain the same */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 flex gap-2 items-center">
                       {product.imagesUrl && product.imagesUrl.length > 0 ? (
                         <div className="relative group h-10 w-10">

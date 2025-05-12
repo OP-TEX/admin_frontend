@@ -6,8 +6,9 @@ export const getProducts = async (searchParams = {}) => {
         .map(key => `${key}=${encodeURIComponent(searchParams[key])}`)
         .join('&');
 
-    const url = `${API_ENDPOINTS.products.all}${queryString ? `?${queryString}` : ''}`;
-    
+    let url = `${API_ENDPOINTS.products.all}${queryString ? `?${queryString}` : ''}`;
+    url = url + "?count=10000&page=1"
+    // console.log('Fetching products from:', url);
     const response = await fetch(url, {
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,

@@ -23,6 +23,7 @@ const authSlice = createSlice({
             state.token = action.payload.accessToken;
             localStorage.setItem('token', action.payload.accessToken);
             localStorage.setItem('refreshToken', action.payload.refreshToken);
+            localStorage.setItem('userId', action.payload.user._id);
         },
         loginFailure: (state, action) => {
             state.loading = false;

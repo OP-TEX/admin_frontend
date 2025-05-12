@@ -19,6 +19,10 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // if (formData.email !== "admin@gmail.com" ) {
+    //   throw new Error("you are not an admin");
+    //   // return;
+    // }
     dispatch(loginStart());
 
     try {
