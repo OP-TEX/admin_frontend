@@ -1,4 +1,4 @@
-const BASE_URL = '/api';  // Remove http://localhost:3000 since we'll use proxy
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';  // Remove http://localhost:3000 since we'll use proxy
 
 export const API_ENDPOINTS = {
     auth: {
