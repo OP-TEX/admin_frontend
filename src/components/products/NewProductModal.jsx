@@ -91,7 +91,7 @@ const NewProductModal = ({ onClose, onSubmit }) => {
       animate={{ opacity: 1 }}
     >
       <motion.div
-        className={`rounded-xl p-6 w-full max-w-md ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
+        className={`rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
         initial={{ y: -20 }}
         animate={{ y: 0 }}
       >

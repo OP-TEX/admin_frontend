@@ -39,7 +39,7 @@ const UpdateStatusModal = ({ isOpen, onClose, order, onStatusUpdate }) => {
     setIsLoading(true);
     try {
       // First update the order status
-      await orderApi.updateOrderStatus(order.orderId, status);
+      await orderApi.updateOrderStatus(order._id, status);
       
       // If delivery person is changed, assign them
       if (selectedDeliveryId !== order.deliveryId) {

@@ -81,7 +81,7 @@ const OrdersTable = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
             >
-                <div className='flex justify-between items-center mb-6'>
+                <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6'>
                     <h2 className='text-xl font-semibold dark:text-gray-100 text-gray-800'>
                         Order List {filteredOrders.length > 0 && 
                             <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
@@ -89,7 +89,7 @@ const OrdersTable = () => {
                             </span>
                         }
                     </h2>
-                    <div className='flex items-center gap-4'>
+                    <div className='flex items-center gap-4 w-full sm:w-auto'>
                         <button 
                             className='text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300'
                             onClick={fetchOrders}
@@ -97,11 +97,11 @@ const OrdersTable = () => {
                         >
                             <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                         </button>
-                        <div className='relative'>
+                        <div className='relative flex-1 sm:flex-initial'>
                             <input
                                 type='text'
                                 placeholder='Search orders...'
-                                className='dark:bg-gray-700 bg-gray-100 dark:text-white text-gray-800 dark:placeholder-gray-400 placeholder-gray-500 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                className='w-full dark:bg-gray-700 bg-gray-100 dark:text-white text-gray-800 dark:placeholder-gray-400 placeholder-gray-500 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
                                 value={searchTerm}
                                 onChange={handleSearch}
                             />

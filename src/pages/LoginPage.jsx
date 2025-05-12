@@ -15,6 +15,7 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    role: "admin"
   });
 
   const handleSubmit = async (e) => {
